@@ -39,8 +39,7 @@ struct r_c_shortest_paths_label : public boost::enable_shared_from_this<r_c_shor
     pred_edge( ed ),
     resident_vertex( vd ),
     b_is_dominated( false ),
-    b_is_processed( false ),
-    b_is_valid( true )
+    b_is_processed( false )
   {}
   r_c_shortest_paths_label& operator=( const r_c_shortest_paths_label& other )
   {
@@ -51,7 +50,6 @@ struct r_c_shortest_paths_label : public boost::enable_shared_from_this<r_c_shor
     resident_vertex = other.resident_vertex;
     b_is_dominated = other.b_is_dominated;
     b_is_processed = other.b_is_processed;
-    b_is_valid = other.b_is_valid;
     return *this;
   }
 
@@ -62,7 +60,6 @@ struct r_c_shortest_paths_label : public boost::enable_shared_from_this<r_c_shor
   typename graph_traits<Graph>::vertex_descriptor resident_vertex;
   bool b_is_dominated;
   bool b_is_processed;
-  bool b_is_valid;
 }; // r_c_shortest_paths_label
 
 template<class Graph, class Resource_Container>
@@ -100,7 +97,6 @@ inline bool operator>
 ( const r_c_shortest_paths_label<Graph, Resource_Container>& l1,
   const r_c_shortest_paths_label<Graph, Resource_Container>& l2 )
 {
-  assert (l1.b_is_valid && l2.b_is_valid);
   return
     l2.cumulated_resource_consumption < l1.cumulated_resource_consumption;
 }
@@ -110,9 +106,7 @@ inline bool operator<=
 ( const r_c_shortest_paths_label<Graph, Resource_Container>& l1,
   const r_c_shortest_paths_label<Graph, Resource_Container>& l2 )
 {
-  assert (l1.b_is_valid && l2.b_is_valid);
-  return
-    l1 < l2 || l1 == l2;
+  return l1 < l2 || l1 == l2;
 }
 
 template<class Graph, class Resource_Container>
@@ -120,7 +114,6 @@ inline bool operator>=
 ( const r_c_shortest_paths_label<Graph, Resource_Container>& l1,
   const r_c_shortest_paths_label<Graph, Resource_Container>& l2 )
 {
-  assert (l1.b_is_valid && l2.b_is_valid);
   return l2 < l1 || l1 == l2;
 }
 
@@ -245,7 +238,6 @@ void r_c_shortest_paths_dispatch
   while( !unprocessed_labels.empty()  && vis.on_enter_loop(unprocessed_labels, g) )
   {
     Splabel cur_label = unprocessed_labels.top();
-    assert (cur_label->b_is_valid);
     unprocessed_labels.pop();
     vis.on_label_popped( *cur_label, g );
     // an Splabel object in unprocessed_labels and the respective Splabel
@@ -260,7 +252,6 @@ void r_c_shortest_paths_dispatch
     // if there is a chance that extending the
     // label leads to new undominated labels, which in turn is possible only
     // if the label to be extended is undominated
-    assert (cur_label->b_is_valid);
     if( !cur_label->b_is_dominated )
     {
       typename boost::graph_traits<Graph>::vertex_descriptor
@@ -277,7 +268,6 @@ void r_c_shortest_paths_dispatch
         while( outer_iter != list_labels_cur_vertex.end() )
         {
           Splabel cur_outer_splabel = *outer_iter;
-          assert (cur_outer_splabel->b_is_valid);
           typename std::list<Splabel>::iterator inner_iter = outer_iter;
           if( !b_outer_iter_at_or_beyond_last_valid_pos_for_dominance
               && outer_iter ==
@@ -300,7 +290,6 @@ void r_c_shortest_paths_dispatch
           while( inner_iter != list_labels_cur_vertex.end() )
           {
             Splabel cur_inner_splabel = *inner_iter;
-            assert (cur_inner_splabel->b_is_valid);
             if( dominance( cur_outer_splabel->
                              cumulated_resource_consumption,
                            cur_inner_splabel->
@@ -311,7 +300,6 @@ void r_c_shortest_paths_dispatch
               list_labels_cur_vertex.erase( buf );
               if( cur_inner_splabel->b_is_processed )
               {
-                cur_inner_splabel->b_is_valid = false;
                 cur_inner_splabel.reset();
               }
               else
@@ -329,10 +317,8 @@ void r_c_shortest_paths_dispatch
               ++outer_iter;
               list_labels_cur_vertex.erase( buf );
               b_outer_iter_erased = true;
-              assert (cur_outer_splabel->b_is_valid);
               if( cur_outer_splabel->b_is_processed )
               {
-                cur_outer_splabel->b_is_valid = false;
                 cur_outer_splabel.reset();
               }
               else
@@ -355,25 +341,21 @@ void r_c_shortest_paths_dispatch
           list_labels_cur_vertex.size() - 1);
       }
     }
-    assert (b_all_pareto_optimal_solutions || cur_label->b_is_valid);
     if( !b_all_pareto_optimal_solutions && cur_label->resident_vertex == t )
     {
       // the devil don't sleep
       if( cur_label->b_is_dominated )
       {
-        cur_label->b_is_valid = false;
         cur_label.reset();
       }
       while( unprocessed_labels.size() )
       {
         Splabel l = unprocessed_labels.top();
-        assert (l->b_is_valid);
         unprocessed_labels.pop();
         // delete only dominated labels, because nondominated labels are
         // deleted at the end of the function
         if( l->b_is_dominated )
         {
-          l->b_is_valid = false;
           l.reset();
         }
       }
@@ -407,7 +389,6 @@ void r_c_shortest_paths_dispatch
         if( !b_feasible )
         {
           vis.on_label_not_feasible( *new_label, g );
-          new_label->b_is_valid = false;
           new_label.reset();
         }
         else
@@ -421,9 +402,7 @@ void r_c_shortest_paths_dispatch
     }
     else
     {
-      assert (cur_label->b_is_valid);
       vis.on_label_dominated( *cur_label, g );
-      cur_label->b_is_valid = false;
       cur_label.reset();
     }
   }
@@ -438,7 +417,6 @@ void r_c_shortest_paths_dispatch
       std::vector<typename graph_traits<Graph>::edge_descriptor>
         cur_pareto_optimal_path;
       boost::shared_ptr<r_c_shortest_paths_label<Graph, Resource_Container> > p_cur_label = *csi;
-      assert (p_cur_label->b_is_valid);
       pareto_optimal_resource_containers.
         push_back( p_cur_label->cumulated_resource_consumption );
       while( p_cur_label->num != 0 )
@@ -474,7 +452,6 @@ void r_c_shortest_paths_dispatch
     const typename std::list<Splabel>::iterator si_end = list_labels_cur_vertex.end();
     for(; si != si_end; ++si )
     {
-      (*si)->b_is_valid = false;
       (*si).reset();
     }
   }
