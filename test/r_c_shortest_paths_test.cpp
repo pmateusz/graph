@@ -771,8 +771,6 @@ int test_main(int, char*[])
   BOOST_CHECK(!pareto_opt_marked_solutions.empty());
   std::vector<std::vector<typename graph_traits<SPPRC_Example_Graph>::edge_descriptor> >::const_iterator path_it, path_end_it;
   for (path_it = pareto_opt_marked_solutions.begin(), path_end_it = pareto_opt_marked_solutions.end(); path_it != path_end_it; ++path_it) {
-    std::stringstream stream;
-
     const std::vector<typename graph_traits<SPPRC_Example_Graph>::edge_descriptor> &path = *path_it;
     BOOST_CHECK(!path.empty());
 
@@ -781,12 +779,9 @@ int test_main(int, char*[])
 
     std::vector<typename graph_traits<SPPRC_Example_Graph>::edge_descriptor>::const_iterator edge_it, edge_it_end;
     typename graph_traits<SPPRC_Example_Graph>::edge_descriptor prev_edge = front;
-    stream << front;
 
     for(edge_it = path.begin() + 1, edge_it_end = path.end(); edge_it != edge_it_end; ++edge_it) {
         typename graph_traits<SPPRC_Example_Graph>::edge_descriptor edge = *edge_it;
-
-        stream << " " << edge;
 
         typename graph_traits<SPPRC_Example_Graph>::vertex_descriptor prev_end, current_end;
         prev_end = boost::source(prev_edge, g3);
@@ -798,8 +793,6 @@ int test_main(int, char*[])
 
     const typename graph_traits<SPPRC_Example_Graph>::edge_descriptor back = path.back();
     BOOST_CHECK(boost::source(back, g3) == g3_source);
-
-    std::cerr << stream.str() << std::endl;
   }
 
   return 0;

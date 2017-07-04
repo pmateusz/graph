@@ -443,9 +443,24 @@ void r_c_shortest_paths_dispatch
         push_back( p_cur_label->cumulated_resource_consumption );
       while( p_cur_label->num != 0 )
       {
-        cur_pareto_optimal_path.push_back( p_cur_label->pred_edge );
+        cur_pareto_optimal_path.push_back(p_cur_label->pred_edge);
         p_cur_label = p_cur_label->p_pred_label;
-        assert (p_cur_label->b_is_valid);
+
+        // assertion b_is_valid beyond this point is not correct if the domination function
+        // requires resource levels to be strictly greater than existing values
+        //
+        // Example
+        // Customers
+        // id   min_arrival   max_departure
+        //  2             0             974
+        //  3             0             972
+        //  4             0             964
+        //  5           678             801
+        //
+        // Path A: 2-3-4-5 (times: 0-16-49-84-678)
+        // Path B: 3-2-4-5 (times: 0-18-51-62-678)
+        // The partial path 3-2-4 dominates the other partial path 2-3-4,
+        // though the path 3-2-4-5 does not strictly dominate the path 2-3-4-5
       }
       pareto_optimal_solutions.push_back( cur_pareto_optimal_path );
       if( !b_all_pareto_optimal_solutions )
@@ -454,14 +469,13 @@ void r_c_shortest_paths_dispatch
   }
 
   BGL_FORALL_VERTICES_T(i, g, Graph) {
-    const std::list<Splabel>& list_labels_cur_vertex = vec_vertex_labels[i];
-    csi_end = list_labels_cur_vertex.end();
-    for( csi = list_labels_cur_vertex.begin(); csi != csi_end; ++csi )
+    std::list<Splabel>& list_labels_cur_vertex = vec_vertex_labels[i];
+    typename std::list<Splabel>::iterator si = list_labels_cur_vertex.begin();
+    const typename std::list<Splabel>::iterator si_end = list_labels_cur_vertex.end();
+    for(; si != si_end; ++si )
     {
-      assert ((*csi)->b_is_valid);
-      (*csi)->b_is_valid = false;
-      // TODO: not needed
-      // (*csi).reset();
+      (*si)->b_is_valid = false;
+      (*si).reset();
     }
   }
 } // r_c_shortest_paths_dispatch
