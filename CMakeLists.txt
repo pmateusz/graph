@@ -16,13 +16,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -ggdb")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/dependencies/cmake/Modules/")
 
+get_filename_component(INCLUDE_DIR "./include" REALPATH)
+include_directories(${INCLUDE_DIR})
+
 find_package(Boost REQUIRED COMPONENTS system)
 include_directories(${Boost_INCLUDE_DIRS})
 
-get_filename_component(INCLUDE_DIR "include/boost" REALPATH)
-include_directories(${INCLUDE_DIR})
-
-file(GLOB_RECURSE SOURCE "src/*.cpp")
+file(GLOB_RECURSE SOURCE "./src/*.cpp")
 add_library(graph STATIC ${SOURCE})
 
 include(CTest)
